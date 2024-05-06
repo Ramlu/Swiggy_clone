@@ -6,12 +6,12 @@ env:
     DOCKER_REGISTRY_PASSWORD: /cicd/docker-credentials/password
     DOCKER_REGISTRY_URL: /cicd/docker-registry/url
     SONAR_TOKEN: /cicd/sonar/sonar-token
+
 phases:
   install:
     runtime-versions:
       python: 3.11
       java: corretto17
-  pre_build:
     commands:
       - echo "Installing dependencies..."
       - echo "Performing Trivy file scan before building the image..."
@@ -36,11 +36,11 @@ phases:
       - echo "$DOCKER_REGISTRY_PASSWORD" | docker login -u "$DOCKER_REGISTRY_USERNAME" --password-stdin "$DOCKER_REGISTRY_URL"
       - docker build -t "$DOCKER_REGISTRY_URL/$DOCKER_REGISTRY_USERNAME/swiggy:latest" .
       - docker push "$DOCKER_REGISTRY_URL/$DOCKER_REGISTRY_USERNAME/swiggy:latest"
+
   post_build:
     commands:
       - echo "Performing Trivy image scan after building the image..."
-      - aws ses send-email --from "naveenramlu@gmail.com" --to "naveenramlu@gmail.com" --subject "CodeBuild Status: $CODEBUILD_BUILD_ID" --text "Build status: $CODEBUILD_BUILD_STATUS" --region "ap-south-1" 
-
+      - aws ses send-email --from "naveenramlu@gmail.com" --to "naveenramlu@gmail.com" --subject "CodeBuild Status: $CODEBUILD_BUILD_ID" --text "Build status: $CODEBUILD_BUILD_STATUS" --region "ap-south-1"
       - trivy image  "$DOCKER_REGISTRY_USERNAME/swiggy:latest" >> trivyimage.txt
       - echo "Running OWASP Dependency-Check scan..."
       - cd dependency-check/bin
@@ -48,18 +48,7 @@ phases:
       - echo "Build completed successfully!"
       - echo "Running SonarQube analysis result"
       - sonar-scanner -Dsonar.projectKey=swiggy -Dsonar.sources=. -Dsonar.host.url=http://13.233.145.252:9000/
-      - aws ses send-email --from "naveenramlu@gmail.com" --to "naveenramlu@gmail.com" --subject "CodeBuild Status: $CODEBUILD_BUILD_ID" --text "Build status: $CODEBUILD_BUILD_STATUS" --region "ap-south-1" 
-  # Update with your preferred AWS region
-
-post_build:
-  commands:
-    - aws ses send-email \
-        --from "naveenramlu@gmail.com" \
-        --to "naveenramlu@gmail.com" \
-        --subject "CodeBuild Status: $CODEBUILD_BUILD_ID" \
-        --text "Build status: $CODEBUILD_BUILD_STATUS" \
-        --region "ap-south-1" # Update with your preferred AWS region
-
+      - aws ses send-email --from "naveenramlu@gmail.com" --to "naveenramlu@gmail.com" --subject "CodeBuild Status: $CODEBUILD_BUILD_ID" --text "Build status: $CODEBUILD_BUILD_STATUS" --region "ap-south-1"
 
 artifacts:
   files:
